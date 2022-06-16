@@ -37,7 +37,42 @@ setxkbmap fr
 source ~/.kube-prompt.sh
 export PS1="\[${GREEN_BG}\]\[${BLACK}\] \w \[${BLUE_BG}\]\[${WHITE}\] \u ${GREY_BG}($KUBE_PS1_SYMBOL_DEFAULT|${GREY}g:\[${NORMAL}\]\[\e[97;100m\]\$(__gcloud_ps1)${GREY}/k:\[${NORMAL}\]\[\e[97;100m\]\$(__kube_ps1))\[\e[47m\]\[${BLACK}\]\[${NORMAL}\]${GREY_BG}\[${BLACK}\]\[${YELLOW}\]\$(__parse_git_branch)\[${NORMAL}\] ${ARROW} "
 
-alias kctx="kubectx"
-alias kns="kubens"
+#alias kctx="kubectx"
+#alias kns="kubens"
 alias gctx="gcloud config configurations list"
 alias kctl="kubectl"
+
+function kns()
+{
+    if [ "$#" -eq 0 ]; then
+        kubectl get ns --no-headers | awk '{print $1}'
+        echo  "( ns = $( kubectl config get-contexts --no-headers | grep '*' | awk '{print $5}') )"
+    elif [ "$#" -eq 1 ]; then
+        kubectl config set-context --current --namespace=$1
+    else
+        echo "ERROR - Usage 'kns' or 'kns <namespace>'"
+    fi
+}
+function kctx()
+{
+    if [ "$#" -eq 0 ]; then
+        kubectl config get-contexts
+    elif [ "$#" -eq 1 ]; then
+         kubectl config use-context $1
+    else
+        echo "ERROR - Usage 'kctx' or 'kctx <context>'"
+    fi
+}
+function check_cert()
+{
+    if [ "$#" -eq 1 ]; then
+         openssl x509 -in $1 -text -noout
+    else
+        echo "ERROR - Usage 'check_cert <file.crt>'"
+    fi
+}
+function get_k8s_cert_details(){
+    kubectl get secret $1 -o json \
+    |jq '."data"."tls.crt"' \
+    | sed 's/"//g' |base64 -d | openssl x509 -text -noout -in -
+}
